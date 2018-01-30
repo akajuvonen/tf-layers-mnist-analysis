@@ -28,7 +28,8 @@ def cnn_model(input_layer):
     pool = tf.layers.max_pooling2d(inputs=conv4, pool_size=[2, 2], strides=2)
 
 def main(dummy):
-    pass
+    # Load MNIST data
+    mnist = tf.contrib.learn.datasets.load_dataset("mnist")
 
 
 if __name__ == '__main__':
