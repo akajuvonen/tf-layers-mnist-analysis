@@ -3,10 +3,10 @@ MNIST data analysis using TensorFlow layers API. Attempting to recreate the same
 
 [keras]: https://github.com/akajuvonen/keras-mnist-analysis
 
-# Dependencies
+## Dependencies
 
 TODO.
 
-# Running
+## Running
 
 TODO.
