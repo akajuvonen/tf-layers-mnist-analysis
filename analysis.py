@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 
-def cnn_model(input_layer):
+def cnn_model(features, labels, mode):
     # Have to reshape the inputs for tf
     input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
 
@@ -31,6 +31,8 @@ def main(dummy):
     # Load MNIST data
     mnist = tf.contrib.learn.datasets.load_dataset("mnist")
 
+    classifier = tf.estimator.Estimator(model_fn=cnn_model,
+                                        model_dir="/cnn_model")
 
 if __name__ == '__main__':
     tf.app.run()
