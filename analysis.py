@@ -3,6 +3,9 @@ import tensorflow as tf
 
 
 def cnn_model(features, labels, mode):
+    """CNN model function. TODO: Not done yet.
+    """
+
     # Have to reshape the inputs for tf
     input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
 
