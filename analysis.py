@@ -3,8 +3,7 @@ import tensorflow as tf
 
 
 def cnn_model(features, labels, mode):
-    """CNN model function.
-    """
+    """CNN model function."""
 
     # Have to reshape the inputs for tf
     input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
@@ -30,36 +29,27 @@ def cnn_model(features, labels, mode):
     pool2width = 7
     pool2height = 7
     pool2channels = 32
-    p2flat = tf.reshape(pool2,
-                            [-1, pool2width * pool2height * pool2channels])
+    p2flat = tf.reshape(pool2, [-1, pool2width * pool2height * pool2channels])
     # Dense layer
-    dense = tf.layers.dense(inputs=p2flat, units=1024,
-                            activation=tf.nn.relu)
-    # Maybe add a dropout later
-    # Logits Layer
-    logits = tf.layers.dense(inputs=dense, units=10)
+    dense = tf.layers.dense(inputs=p2flat, units=1024, activation=tf.nn.relu)
 
-    # Calculate Loss (for both TRAIN and EVAL modes)
-    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=logits)
+    # Output layer
+    output = tf.layers.dense(inputs=dense, units=10)
 
-    # Configure the Training Op (for TRAIN mode)
-    if mode == tf.estimator.ModeKeys.TRAIN:
-      optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
-      train_op = optimizer.minimize(
-          loss=loss,
-          global_step=tf.train.get_global_step())
-      return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
-
+    global_step = tf.train.get_global_step()
+    loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=output)
+    train_op = tf.train.GradientDescentOptimizer(1e-2).minimize(loss,
+                                                                global_step)
+    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
 
 
 def main(dummy):
     # Load MNIST data
     mnist = tf.contrib.learn.datasets.load_dataset("mnist")
-    train_data = mnist.train.images  # Returns np.array
+    train_data = mnist.train.images
     train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
 
-    classifier = tf.estimator.Estimator(model_fn=cnn_model,
-                                        model_dir="cnn_model")
+    estimator = tf.estimator.Estimator(model_fn=cnn_model)
 
     # Train the model
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -68,7 +58,8 @@ def main(dummy):
         batch_size=100,
         num_epochs=10,
         shuffle=True)
-    classifier.train(input_fn=train_input_fn)
+    estimator.train(train_input_fn)
 
+    
 if __name__ == '__main__':
     tf.app.run()
