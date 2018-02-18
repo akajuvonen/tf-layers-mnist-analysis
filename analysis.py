@@ -38,8 +38,7 @@ def cnn_model(features, labels, mode):
 
     global_step = tf.train.get_global_step()
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=output)
-    train_op = tf.train.GradientDescentOptimizer(1e-2).minimize(loss,
-                                                                global_step)
+    train_op = tf.train.AdamOptimizer(1e-2).minimize(loss, global_step)
     return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
 
 
@@ -60,6 +59,6 @@ def main(dummy):
         shuffle=True)
     estimator.train(train_input_fn)
 
-    
+
 if __name__ == '__main__':
     tf.app.run()
