@@ -70,7 +70,6 @@ def cnn_model(features, labels, mode):
                                       eval_metric_ops=eval_metric_ops)
 
 
-
 def main(dummy):
     # Load MNIST data
     mnist = tf.contrib.learn.datasets.load_dataset("mnist")
