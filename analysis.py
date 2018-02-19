@@ -43,31 +43,22 @@ def cnn_model(features, labels, mode):
     # Output layer
     output = tf.layers.dense(inputs=dense, units=10)
 
-    # Calculate loss
+    # Calculate loss, global step, train op, predictions, acc etc.
+    # Needed for different modes
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=output)
-
-    # Training
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        global_step = tf.train.get_global_step()
-        train_op = tf.train.AdamOptimizer(1e-2).minimize(loss, global_step)
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss,
-                                          train_op=train_op)
-
-    # Predictions for training and eval
+    global_step = tf.train.get_global_step()
+    train_op = tf.train.AdamOptimizer(1e-2).minimize(loss, global_step)
     predictions = {"classes": tf.argmax(input=output, axis=1),
                    "probabilities": tf.nn.softmax(output,
                                                   name="softmax_tensor")}
-
-    # Predict
-    if mode == tf.estimator.ModeKeys.PREDICT:
-        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
-
-    # Eval
     accuracy = tf.metrics.accuracy(labels=labels,
                                    predictions=predictions["classes"])
     eval_metric_ops = {"accuracy": accuracy}
-    return tf.estimator.EstimatorSpec(mode=mode, loss=loss,
-                                      eval_metric_ops=eval_metric_ops)
+
+    # Return the model spec
+    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op,
+                                      eval_metric_ops=eval_metric_ops,
+                                      predictions=predictions)
 
 
 def main(dummy):
@@ -88,7 +79,7 @@ def main(dummy):
     train_input = tf.estimator.inputs.numpy_input_fn(x={"x": train_data},
                                                      y=train_labels,
                                                      batch_size=100,
-                                                     num_epochs=10,
+                                                     num_epochs=1,
                                                      shuffle=True)
     estimator.train(train_input)
 
