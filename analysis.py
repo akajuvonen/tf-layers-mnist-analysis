@@ -3,7 +3,14 @@ import tensorflow as tf
 
 
 def cnn_model(features, labels, mode):
-    """CNN model function."""
+    """CNN model function.
+    Arguments:
+    features -- Batch features from input function
+    labels -- Batch labels from input function
+    mode -- train, eval, predict, instance of tf.estimator.Modekeys
+    Returns:
+    The estimator spec depending on the chosen mode
+    """
 
     # Have to reshape the inputs for tf
     input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
@@ -36,28 +43,63 @@ def cnn_model(features, labels, mode):
     # Output layer
     output = tf.layers.dense(inputs=dense, units=10)
 
-    global_step = tf.train.get_global_step()
+    # Calculate loss
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=output)
-    train_op = tf.train.AdamOptimizer(1e-2).minimize(loss, global_step)
-    return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+
+    # Training
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        global_step = tf.train.get_global_step()
+        train_op = tf.train.AdamOptimizer(1e-2).minimize(loss, global_step)
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss,
+                                          train_op=train_op)
+
+    # Predictions for training and eval
+    predictions = {"classes": tf.argmax(input=output, axis=1),
+                   "probabilities": tf.nn.softmax(output,
+                                                  name="softmax_tensor")}
+
+    # Predict
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
+    # Eval
+    accuracy = tf.metrics.accuracy(labels=labels,
+                                   predictions=predictions["classes"])
+    eval_metric_ops = {"accuracy": accuracy}
+    return tf.estimator.EstimatorSpec(mode=mode, loss=loss,
+                                      eval_metric_ops=eval_metric_ops)
+
 
 
 def main(dummy):
     # Load MNIST data
     mnist = tf.contrib.learn.datasets.load_dataset("mnist")
+    # Training data
     train_data = mnist.train.images
     train_labels = np.asarray(mnist.train.labels, dtype=np.int32)
+    # Evaluation data
+    eval_data = mnist.test.images
+    eval_labels = np.asarray(mnist.test.labels, dtype=np.int32)
 
-    estimator = tf.estimator.Estimator(model_fn=cnn_model)
+    # Create the estimator
+    estimator = tf.estimator.Estimator(model_fn=cnn_model,
+                                       model_dir='cnn_model')
 
     # Train the model
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": train_data},
-        y=train_labels,
-        batch_size=100,
-        num_epochs=10,
-        shuffle=True)
-    estimator.train(train_input_fn)
+    train_input = tf.estimator.inputs.numpy_input_fn(x={"x": train_data},
+                                                     y=train_labels,
+                                                     batch_size=100,
+                                                     num_epochs=10,
+                                                     shuffle=True)
+    estimator.train(train_input)
+
+    # Evaluate
+    eval_input = tf.estimator.inputs.numpy_input_fn(x={"x": eval_data},
+                                                    y=eval_labels,
+                                                    num_epochs=1,
+                                                    shuffle=False)
+    results = estimator.evaluate(input_fn=eval_input)
+    print(results)
 
 
 if __name__ == '__main__':
