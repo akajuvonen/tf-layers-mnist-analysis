@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from sklearn.metrics import confusion_matrix
 
 
 def cnn_model(features, labels, mode):
@@ -44,13 +45,12 @@ def cnn_model(features, labels, mode):
     output = tf.layers.dense(inputs=dense, units=10)
 
     # Predictions for eval and predict
-    predictions = {"classes": tf.argmax(input=output, axis=1),
+    predictions = {"class": tf.argmax(input=output, axis=1),
                    "probabilities": tf.nn.softmax(output,
                                                   name="softmax_tensor")}
 
     # If predicting, return early
     if mode == tf.estimator.ModeKeys.PREDICT:
-        print('--- PREDICT --- ')
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
     # Calculate loss, global step, train op, predictions, acc etc.
@@ -59,7 +59,7 @@ def cnn_model(features, labels, mode):
     global_step = tf.train.get_global_step()
     train_op = tf.train.AdamOptimizer(1e-2).minimize(loss, global_step)
     accuracy = tf.metrics.accuracy(labels=labels,
-                                   predictions=predictions["classes"])
+                                   predictions=predictions["class"])
     eval_metric_ops = {"accuracy": accuracy}
 
     # Return the model spec
@@ -102,8 +102,13 @@ def main(dummy):
     predict_input = tf.estimator.inputs.numpy_input_fn(x={"x": eval_data},
                                                           num_epochs=1,
                                                           shuffle=False)
-    predictions = estimator.predict(input_fn=predict_input)
-    print(len(list(predictions)))
+    predictions = list(estimator.predict(input_fn=predict_input))
+    pred_classes = [x['class'] for x in predictions]
+    pred_classes = np.asarray(pred_classes)
+
+    # Confusion matrix
+    cm = confusion_matrix(eval_labels, pred_classes)
+    print(cm)
 
 if __name__ == '__main__':
     tf.app.run()
