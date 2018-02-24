@@ -43,14 +43,21 @@ def cnn_model(features, labels, mode):
     # Output layer
     output = tf.layers.dense(inputs=dense, units=10)
 
+    # Predictions for eval and predict
+    predictions = {"classes": tf.argmax(input=output, axis=1),
+                   "probabilities": tf.nn.softmax(output,
+                                                  name="softmax_tensor")}
+
+    # If predicting, return early
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        print('--- PREDICT --- ')
+        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+
     # Calculate loss, global step, train op, predictions, acc etc.
     # Needed for different modes
     loss = tf.losses.sparse_softmax_cross_entropy(labels=labels, logits=output)
     global_step = tf.train.get_global_step()
     train_op = tf.train.AdamOptimizer(1e-2).minimize(loss, global_step)
-    predictions = {"classes": tf.argmax(input=output, axis=1),
-                   "probabilities": tf.nn.softmax(output,
-                                                  name="softmax_tensor")}
     accuracy = tf.metrics.accuracy(labels=labels,
                                    predictions=predictions["classes"])
     eval_metric_ops = {"accuracy": accuracy}
@@ -91,6 +98,12 @@ def main(dummy):
     results = estimator.evaluate(input_fn=eval_input)
     print(results)
 
+    # Predictions
+    predict_input = tf.estimator.inputs.numpy_input_fn(x={"x": eval_data},
+                                                          num_epochs=1,
+                                                          shuffle=False)
+    predictions = estimator.predict(input_fn=predict_input)
+    print(len(list(predictions)))
 
 if __name__ == '__main__':
     tf.app.run()
