@@ -86,7 +86,7 @@ def main(dummy):
     train_input = tf.estimator.inputs.numpy_input_fn(x={"x": train_data},
                                                      y=train_labels,
                                                      batch_size=100,
-                                                     num_epochs=1,
+                                                     num_epochs=10,
                                                      shuffle=True)
     estimator.train(train_input)
 
